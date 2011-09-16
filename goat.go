@@ -3,7 +3,8 @@ package main
 import (
 	"log"
 	"os"
-	"term"
+
+	"github.com/kylelemons/goat/term"
 )
 
 func main() {

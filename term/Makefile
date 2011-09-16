@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=term
+TARG=github.com/kylelemons/goat/term
 GOFILES=\
 	term.go\
 	codes.go\
