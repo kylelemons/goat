@@ -18,7 +18,7 @@ func main() {
 			return
 		}
 		switch str := string(ch[:n]); str {
-		case "quit", "":
+		case "quit", "\x04":
 			return
 		case "\r", "\n":
 			log.Printf("read: %q\r", line)

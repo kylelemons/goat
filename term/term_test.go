@@ -65,55 +65,55 @@ var termTests = []struct {
 		Output: []string{"bksp", "\n"},
 	},
 	{
-		Desc: "escape only",
-		Chunks: []string{""},
-		Echo: []string{}, // EOF before escape completes won't echo
-		Output: []string{""},
+		Desc:   "escape only",
+		Chunks: []string{"\x1b"},
+		Echo:   []string{}, // EOF before escape completes won't echo
+		Output: []string{"\x1b"},
 	},
 	{
-		Desc: "escape non-CSI",
-		Chunks: []string{"0"},
-		Echo: []string{"", "0"},
-		Output: []string{"0"},
+		Desc:   "escape non-CSI",
+		Chunks: []string{"\x1b0"},
+		Echo:   []string{"\x1b", "0"},
+		Output: []string{"\x1b0"},
 	},
 	{
-		Desc: "escape embedded",
-		Chunks: []string{"onetwo"},
-		Echo: []string{"o", "n", "e", "", "t", "w", "o"},
-		Output: []string{"onetwo"},
+		Desc:   "escape embedded",
+		Chunks: []string{"one\x1btwo"},
+		Echo:   []string{"o", "n", "e", "\x1b", "t", "w", "o"},
+		Output: []string{"one\x1btwo"},
 	},
 	{
-		Desc: "esc BS",
-		Chunks: []string{"one\b\btwo"},
+		Desc:   "esc BS",
+		Chunks: []string{"one\x1b\b\btwo"},
 		Output: []string{"ontwo"},
 	},
 	{
-		Desc: "unknown seq",
-		Chunks: []string{"[5G"}, // CHA[5]
-		Echo: []string{}, // Well-formed escapes, even unknown, aren't echoed
-		Output: []string{"[5G"}, // but they are outputted
+		Desc:   "unknown seq",
+		Chunks: []string{"\x1b[5G"}, // CHA[5]
+		Echo:   []string{},          // Well-formed escapes, even unknown, aren't echoed
+		Output: []string{"\x1b[5G"}, // but they are outputted
 	},
 	{
-		Desc: "unknown seq inline",
-		Chunks: []string{"on[5Ge"},
-		Echo: []string{"o", "n", "e"},
-		Output: []string{"on[5Ge"},
+		Desc:   "unknown seq inline",
+		Chunks: []string{"on\x1b[5Ge"},
+		Echo:   []string{"o", "n", "e"},
+		Output: []string{"on\x1b[5Ge"},
 	},
 	{
-		Desc: "up",
-		Chunks: []string{"one\n[Atwo\n"},
+		Desc:   "up",
+		Chunks: []string{"one\n\x1b[Atwo\n"},
 		Echo:   []string{"o", "n", "e", "\r\n", "\rone", "t", "w", "o", "\r\n"},
 		Output: []string{"one", "\n", "onetwo", "\n"},
 	},
 	{
-		Desc: "late up",
-		Chunks: []string{"one\ntwo[A\n"},
+		Desc:   "late up",
+		Chunks: []string{"one\ntwo\x1b[A\n"},
 		Echo:   []string{"o", "n", "e", "\r\n", "t", "w", "o", "\rone", "\r\n"},
 		Output: []string{"one", "\n", "one", "\n"},
 	},
 	{
-		Desc: "up up",
-		Chunks: []string{"one\n[Atwo[Athree\n"},
+		Desc:   "up up",
+		Chunks: []string{"one\n\x1b[Atwo\x1b[Athree\n"},
 		Echo: []string{
 			"o", "n", "e", "\r\n",
 			"\rone", "t", "w", "o",
