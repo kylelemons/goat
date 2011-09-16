@@ -29,7 +29,7 @@ type TTY struct {
 
 func NewTTY(user io.Reader) *TTY {
 	t := &TTY{
-		tty: user,
+		tty:  user,
 		next: make(chan []byte, 32),
 		line: true,
 		size: 32,
@@ -70,12 +70,14 @@ func (t *TTY) run() {
 	}
 
 	hprev := func() {
-		if len(hist) == 0 { return }
+		if len(hist) == 0 {
+			return
+		}
 		width := len(preescape)
 		output = hist
 		preescape = nil
 		if t.echo {
-			size, delta := 1 + len(output), width - len(output)
+			size, delta := 1+len(output), width-len(output)
 			if delta > 0 {
 				size += 2 * delta
 			}
@@ -99,7 +101,7 @@ func (t *TTY) run() {
 			}
 			output = append(output, ESC)
 		case '\r', '\n':
-			echo('\r','\n')
+			echo('\r', '\n')
 			hpush()
 			fallthrough
 		case SOH, STX, ETX, EOT, ENQ, ACK, BEL, VT, FF, SO, SI, DLE, DC1,

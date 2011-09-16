@@ -6,63 +6,63 @@ import (
 	"testing"
 )
 
-var termTests = []struct{
+var termTests = []struct {
 	Desc   string
 	Chunks []string
 	Echo   []string
 	Output []string
 }{
 	{
-		Desc: "basic",
+		Desc:   "basic",
 		Chunks: []string{"test"},
 		Output: []string{"test"},
 	},
 	{
-		Desc: "lines",
+		Desc:   "lines",
 		Chunks: []string{"one\ntwo"},
-		Output: []string{"one","\n","two"},
+		Output: []string{"one", "\n", "two"},
 	},
 	{
-		Desc: "\\r\\n",
+		Desc:   "\\r\\n",
 		Chunks: []string{"one\r\ntwo"},
-		Output: []string{"one","\r","\n","two"},
+		Output: []string{"one", "\r", "\n", "two"},
 	},
 	{
-		Desc: "echo",
-		Chunks: []string{"o","n","e"},
-		Echo: []string{"o","n","e"},
+		Desc:   "echo",
+		Chunks: []string{"o", "n", "e"},
+		Echo:   []string{"o", "n", "e"},
 	},
 	{
-		Desc: "newline",
-		Chunks: []string{"o","n","e","\r","\n"},
-		Echo: []string{"o","n","e","\r\n","\r\n"},
+		Desc:   "newline",
+		Chunks: []string{"o", "n", "e", "\r", "\n"},
+		Echo:   []string{"o", "n", "e", "\r\n", "\r\n"},
 	},
 	{
-		Desc: "word",
+		Desc:   "word",
 		Chunks: []string{"one\n"},
-		Echo: []string{"o","n","e","\r\n"},
+		Echo:   []string{"o", "n", "e", "\r\n"},
 	},
 	{
-		Desc: "backspace",
+		Desc:   "backspace",
 		Chunks: []string{"spee\bll"},
-		Echo: []string{"s","p","e","e","\b \b","l","l"},
+		Echo:   []string{"s", "p", "e", "e", "\b \b", "l", "l"},
 		Output: []string{"spell"},
 	},
 	{
-		Desc: "bksp start",
+		Desc:   "bksp start",
 		Chunks: []string{"\b\bbkx\bsp"},
-		Echo: []string{"b","k","x","\b \b","s","p"},
+		Echo:   []string{"b", "k", "x", "\b \b", "s", "p"},
 		Output: []string{"bksp"},
 	},
 	{
-		Desc: "bksp lines",
+		Desc:   "bksp lines",
 		Chunks: []string{"\b\bbkx\bsp\ntext\b\bst"},
-		Output: []string{"bksp","\n", "test"},
+		Output: []string{"bksp", "\n", "test"},
 	},
 	{
-		Desc: "bksp start chars",
+		Desc:   "bksp start chars",
 		Chunks: []string{"\b", "b", "k", "s", "p", "\n"},
-		Output: []string{"bksp","\n"},
+		Output: []string{"bksp", "\n"},
 	},
 	{
 		Desc: "escape only",
@@ -79,7 +79,7 @@ var termTests = []struct{
 	{
 		Desc: "escape embedded",
 		Chunks: []string{"onetwo"},
-		Echo: []string{"o","n","e","","t","w","o"},
+		Echo: []string{"o", "n", "e", "", "t", "w", "o"},
 		Output: []string{"onetwo"},
 	},
 	{
@@ -96,30 +96,30 @@ var termTests = []struct{
 	{
 		Desc: "unknown seq inline",
 		Chunks: []string{"on[5Ge"},
-		Echo: []string{"o","n","e"},
+		Echo: []string{"o", "n", "e"},
 		Output: []string{"on[5Ge"},
 	},
 	{
 		Desc: "up",
 		Chunks: []string{"one\n[Atwo\n"},
-		Echo: []string{"o","n","e","\r\n","\rone","t","w","o","\r\n"},
-		Output: []string{"one","\n","onetwo","\n"},
+		Echo:   []string{"o", "n", "e", "\r\n", "\rone", "t", "w", "o", "\r\n"},
+		Output: []string{"one", "\n", "onetwo", "\n"},
 	},
 	{
 		Desc: "late up",
 		Chunks: []string{"one\ntwo[A\n"},
-		Echo: []string{"o","n","e","\r\n","t","w","o","\rone","\r\n"},
-		Output: []string{"one","\n","one","\n"},
+		Echo:   []string{"o", "n", "e", "\r\n", "t", "w", "o", "\rone", "\r\n"},
+		Output: []string{"one", "\n", "one", "\n"},
 	},
 	{
 		Desc: "up up",
 		Chunks: []string{"one\n[Atwo[Athree\n"},
 		Echo: []string{
-			"o","n","e","\r\n",
-			"\rone","t","w","o",
+			"o", "n", "e", "\r\n",
+			"\rone", "t", "w", "o",
 			"\rone   \b\b\b",
-			"t","h","r","e","e","\r\n"},
-		Output: []string{"one","\n","onethree","\n"},
+			"t", "h", "r", "e", "e", "\r\n"},
+		Output: []string{"one", "\n", "onethree", "\n"},
 	},
 }
 
@@ -166,7 +166,7 @@ func TestTerm(t *testing.T) {
 		userR, userW := io.Pipe()
 		echoR, echoW := io.Pipe()
 
-		tty := NewTTY(rw{userR,echoW})
+		tty := NewTTY(rw{userR, echoW})
 
 		go checkRead("read", tty, test.Output)
 		go checkRead("echo", echoR, test.Echo)
