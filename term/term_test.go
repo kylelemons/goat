@@ -106,6 +106,12 @@ var termTests = []struct {
 		Output: []string{"one", "\n", "onetwo", "\n"},
 	},
 	{
+		Desc:   "up noop",
+		Chunks: []string{"y\x1b[A", "x"},
+		Echo:   []string{"y","x"},
+		Output: []string{"yx"},
+	},
+	{
 		Desc:   "late up",
 		Chunks: []string{"one\ntwo\x1b[A\n"},
 		Echo:   []string{"o", "n", "e", "\r\n", "t", "w", "o", "\rone", "\r\n"},

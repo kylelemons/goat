@@ -148,11 +148,13 @@ func (t *TTY) hpush() {
 //
 // Preconditions:
 // - Must be called within an escape sequence
-// Side effects: (only if t.last has been set)
-// - t.output will contain a copy of t.last
+// Side effects:
+// - t.output will contain a copy of t.last or will contain preescape
 // - t.preescape will be nil
 func (t *TTY) hprev() {
 	if len(t.last) == 0 {
+		t.output = t.preescape
+		t.preescape = nil
 		return
 	}
 
