@@ -36,10 +36,16 @@ const (
 	US  // Unit separator
 )
 
-// Control Codes
+// Control Constants
+//
+// These are all emitted by themselves to easily discern them from the rest of
+// the sequence of chunks.
 const (
 	Interrupt = "\x03" // ^C
 	EndOfFile = "\x04" // ^D
 	Suspend   = "\x1a" // ^Z
 	Quit      = "\x1c" // ^\
+
+	CarriageReturn = "\r"
+	NewLine        = "\n"
 )

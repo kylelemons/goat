@@ -1,3 +1,14 @@
+// goat
+//
+// This binary should be run in raw mode:
+//   stty raw; goat; stty cooked
+//
+// It is a basic example of terminal emulation with the "goat/term" package.
+// It reads chunks in and writes them to standard output.  Try typing a line
+// and then hitting the up key on the next line.  Try editing a previous line
+// and hitting the up key again.
+//
+// Press ^C, ^D, or type "quit" to exit.
 package main
 
 import (
@@ -18,9 +29,9 @@ func main() {
 			return
 		}
 		switch str := string(ch[:n]); str {
-		case "quit", "\x04":
+		case "quit", term.Interrupt, term.EndOfFile:
 			return
-		case "\r", "\n":
+		case term.CarriageReturn, term.NewLine:
 			log.Printf("read: %q\r", line)
 			line = ""
 		default:
