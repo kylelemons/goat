@@ -286,6 +286,10 @@ func (t *TTY) char(ch byte) {
 // Most of them don't do anything, but these known escape sequences are not
 // written out.  If the escape sequence is not known, however, the original
 // output is restored with the escape sequence appended.
+//   Up    - loads the last saved line
+//   Down  - goes to the end of the current line
+//   Left  - goes one character closer to the beginning of the line
+//   Right - goes one character closer to the end of the line
 //
 // Side Effects: (possible)
 // - t.output refers to a new/different slice
