@@ -12,6 +12,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 
@@ -19,6 +20,7 @@ import (
 )
 
 func main() {
+	// Set the terminal to RAW mode
 	tio, err := term.NewTermSettings(0)
 	if err != nil {
 		log.Fatalf("terminfo: %s", err)
@@ -26,24 +28,44 @@ func main() {
 	if err := tio.Raw(); err != nil {
 		log.Fatalf("rawterm: %s", err)
 	}
+
+	// Restore cooked settings on exit
 	defer tio.Reset()
 
-	ch := make([]byte, 10)
+	// Allocate a TTY connected to standard input
 	tty := term.NewTTY(os.Stdin)
+
+	// Prompt after each newline
+	prompt := func() {
+		io.WriteString(tty, "> ")
+	}
+	prompt()
+
+	// Allocate the line buffer and accumulator
+	linebuf := make([]byte, 128)
 	line := ""
+
 	for {
-		n, err := tty.Read(ch)
+		// Read from the TTY
+		n, err := tty.Read(linebuf)
 		if err != nil {
 			log.Printf("read: %s", err)
 			return
 		}
-		switch str := string(ch[:n]); str {
+
+		// Examine the chunk
+		switch str := string(linebuf[:n]); str {
 		case "quit", term.Interrupt, term.EndOfFile:
+			// Quit on "quit", ^C, and ^D
+			io.WriteString(os.Stdout, "Goodbye!\r\n")
 			return
 		case term.CarriageReturn, term.NewLine:
-			log.Printf("read: %q\r", line)
+			// Print out lines
+			log.Printf("read: %q\r\n", line)
+			prompt()
 			line = ""
 		default:
+			// Accumulate lines
 			line += str
 		}
 	}
