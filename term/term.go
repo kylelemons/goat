@@ -220,10 +220,29 @@ func (t *TTY) char(ch byte) {
 		t.emit()
 		t.next <- []byte{ch}
 	case BS, DEL:
-		if len(t.output) > 0 {
-			t.echo(ch, ' ', ch)
-			t.output = t.output[:len(t.output)-1]
+		if len(t.output) == 0 || t.linepos == 0 {
+			break
 		}
+		if t.linepos > 0 {
+			// Delete onscreen
+			if t.intecho != nil {
+				delta := len(t.output) - t.linepos
+				overwrite := make([]byte, 1+1+2*delta+1)
+				overwrite[0] = ch
+				copy(overwrite[1:], t.output[t.linepos:])
+				overwrite[1+delta] = ' '
+				for i := 0; i < delta+1; i++ {
+					overwrite[2+delta+i] = '\b'
+				}
+				t.echo(overwrite...)
+			}
+			// Delete from output
+			t.output = append(t.output[:t.linepos-1], t.output[t.linepos:]...)
+			t.linepos--
+			break
+		}
+		t.echo(ch, ' ', ch)
+		t.output = t.output[:len(t.output)-1]
 	default:
 		if t.linepos >= 0 {
 			// Insert on screen

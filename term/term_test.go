@@ -159,6 +159,22 @@ var termTests = []struct {
 		Output: []string{"abdc"},
 	},
 	{
+		Desc: "left bksp",
+		Chunks: []string{
+			"abcd",
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"\b",
+		},
+		Echo: []string{
+			"a", "b", "c", "d",
+			"\x1b[D",
+			"\x1b[D",
+			"\bcd \b\b\b",
+		},
+		Output: []string{"acd"},
+	},
+	{
 		Desc: "left noop insert",
 		Chunks: []string{
 			"a",
