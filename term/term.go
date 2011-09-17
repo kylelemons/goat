@@ -328,7 +328,7 @@ func (t *TTY) esc(ch byte) {
 			}
 			t.echo(t.output...)
 			t.linepos++
-			if t.linepos == len(t.output) {
+			if t.linepos == len(t.preescape) {
 				t.linepos = -1
 			}
 		case 'D': // left

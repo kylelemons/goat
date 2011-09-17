@@ -229,6 +229,28 @@ var termTests = []struct {
 		Output: []string{"abc"},
 	},
 	{
+		Desc: "left right right",
+		Chunks: []string{
+			"01234",
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"\x1b[C", // RIGHT
+			"\x1b[C", // RIGHT
+			"X",
+		},
+		Echo: []string{
+			"0", "1", "2", "3", "4",
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"\x1b[C", // RIGHT
+			"\x1b[C", // RIGHT
+			"X4\b",
+		},
+		Output: []string{"0123X4"},
+	},
+	{
 		Desc: "left left down",
 		Chunks: []string{
 			"abc",
