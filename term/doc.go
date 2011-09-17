@@ -5,7 +5,7 @@
 // the NewTTY function, interactive echo will automatically be enabled if the
 // provided io.Reader's underlying object also implements io.Writer.
 //
-// Line editing capabilities
+// Line editing capabilities (Line mode)
 //
 // The line editing facilities are very basic; you can type, and you can
 // backspace out characters up to the beginning of the line.  Note that for all
@@ -18,7 +18,7 @@
 //   DOWN   Move to the end of the line
 //   UP     Restore previous line (see below)
 //
-// Line history
+// Line history (Line mode)
 //
 // Currently the TTY only has a single-line history.  Pressing the return key
 // will save the current line in that history, and pressing the "up" arrow at
