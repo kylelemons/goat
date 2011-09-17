@@ -102,13 +102,17 @@ var termTests = []struct {
 	{
 		Desc:   "up",
 		Chunks: []string{"one\n\x1b[Atwo\n"},
-		Echo:   []string{"o", "n", "e", "\r\n", "\rone", "t", "w", "o", "\r\n"},
+		Echo:   []string{
+			"o", "n", "e", "\r\n",
+			"one",
+			"t", "w", "o", "\r\n",
+		},
 		Output: []string{"one", "\n", "onetwo", "\n"},
 	},
 	{
 		Desc:   "zero up",
 		Chunks: []string{"0\n\x1b[A1"},
-		Echo:   []string{"0", "\r\n", "\r0", "1"},
+		Echo:   []string{"0", "\r\n", "0", "1"},
 		Output: []string{"0", "\n", "01"},
 	},
 	{
@@ -120,7 +124,11 @@ var termTests = []struct {
 	{
 		Desc:   "late up",
 		Chunks: []string{"one\ntwo\x1b[A\n"},
-		Echo:   []string{"o", "n", "e", "\r\n", "t", "w", "o", "\rone", "\r\n"},
+		Echo:   []string{
+			"o", "n", "e", "\r\n",
+			"t", "w", "o",
+			"\b\b\bone", "\r\n",
+		},
 		Output: []string{"one", "\n", "one", "\n"},
 	},
 	{
@@ -128,8 +136,8 @@ var termTests = []struct {
 		Chunks: []string{"one\n\x1b[Atwo\x1b[Athree\n"},
 		Echo: []string{
 			"o", "n", "e", "\r\n",
-			"\rone", "t", "w", "o",
-			"\rone   \b\b\b",
+			"one", "t", "w", "o",
+			"\b\b\b\b\b\bone   \b\b\b",
 			"t", "h", "r", "e", "e", "\r\n"},
 		Output: []string{"one", "\n", "onethree", "\n"},
 	},
@@ -278,7 +286,7 @@ var termTests = []struct {
 			"q", "w", "e", "r", "t", "y", "\r\n",
 			"a", "b", "c",
 			"\x1b[D",
-			"\rqwerty",
+			"\b\bqwerty",
 			"!",
 		},
 		Output: []string{"qwerty", "\n", "qwerty!"},

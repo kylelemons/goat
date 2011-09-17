@@ -160,22 +160,29 @@ func (t *TTY) hprev() {
 
 	t.output = make([]byte, len(t.last))
 	copy(t.output, t.last)
-	t.linepos = -1
 
 	width := len(t.preescape)
 	t.preescape = nil
 
+	home := width
+	if t.linepos >= 0 {
+		home = t.linepos
+	}
+	t.linepos = -1
+
 	if t.intecho != nil {
-		size, delta := 1+len(t.output), width-len(t.output)
+		size, delta := home+len(t.output), width-len(t.output)
 		if delta > 0 {
 			size += 2 * delta
 		}
 		overwrite := make([]byte, size)
-		overwrite[0] = '\r'
-		copy(overwrite[1:], t.output)
+		for i := 0; i < home; i++ {
+			overwrite[i] = '\b'
+		}
+		copy(overwrite[home:], t.output)
 		for i := len(t.output); i < width; i++ {
-			overwrite[1+i] = ' '
-			overwrite[1+i+delta] = '\b'
+			overwrite[home+i] = ' '
+			overwrite[home+i+delta] = '\b'
 		}
 		t.echo(overwrite...)
 	}
