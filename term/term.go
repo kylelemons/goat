@@ -222,9 +222,9 @@ func (t *TTY) char(ch byte) {
 			t.output = make([]byte, 0, t.bsize)
 		}
 		t.next <- []byte{ch}
-	case BS:
+	case BS, DEL:
 		if len(t.output) > 0 {
-			t.echo(BS, ' ', BS)
+			t.echo(ch, ' ', ch)
 			t.output = t.output[:len(t.output)-1]
 		}
 	default:

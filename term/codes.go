@@ -34,6 +34,8 @@ const (
 	GS  // Group separator
 	RS  // Record separator
 	US  // Unit separator
+
+	DEL = 127 // Delete
 )
 
 // Control Constants
