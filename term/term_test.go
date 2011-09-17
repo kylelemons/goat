@@ -122,7 +122,7 @@ var termTests = []struct {
 		Output: []string{"one", "\n", "onethree", "\n"},
 	},
 	{
-		Desc:   "left",
+		Desc: "left",
 		Chunks: []string{
 			"abcde",
 			"\x1b[D", // LEFT
@@ -134,7 +134,7 @@ var termTests = []struct {
 		Output: []string{"abcde"},
 	},
 	{
-		Desc:   "left noop",
+		Desc: "left noop",
 		Chunks: []string{
 			"\x1b[D", // LEFT
 			"abcde",
@@ -145,7 +145,7 @@ var termTests = []struct {
 		Output: []string{"abcde"},
 	},
 	{
-		Desc:   "left insert",
+		Desc: "left insert",
 		Chunks: []string{
 			"abc",
 			"\x1b[D", // LEFT
@@ -159,7 +159,7 @@ var termTests = []struct {
 		Output: []string{"abdc"},
 	},
 	{
-		Desc:   "left noop insert",
+		Desc: "left noop insert",
 		Chunks: []string{
 			"a",
 			"\x1b[D", // LEFT
@@ -174,7 +174,7 @@ var termTests = []struct {
 		Output: []string{"ba"},
 	},
 	{
-		Desc:   "right noop",
+		Desc: "right noop",
 		Chunks: []string{
 			"abc",
 			"\x1b[C", // RIGHT
@@ -185,7 +185,7 @@ var termTests = []struct {
 		Output: []string{"abc"},
 	},
 	{
-		Desc:   "left right",
+		Desc: "left right",
 		Chunks: []string{
 			"ab",
 			"\x1b[D", // LEFT
@@ -201,7 +201,7 @@ var termTests = []struct {
 		Output: []string{"abc"},
 	},
 	{
-		Desc:   "left left down",
+		Desc: "left left down",
 		Chunks: []string{
 			"abc",
 			"\x1b[D", // LEFT

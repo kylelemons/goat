@@ -228,8 +228,8 @@ func (t *TTY) char(ch byte) {
 		if t.linepos >= 0 {
 			// Insert on screen
 			if t.intecho != nil {
-				delta := len(t.output)-t.linepos
-				overwrite := make([]byte, 1 + 2*delta)
+				delta := len(t.output) - t.linepos
+				overwrite := make([]byte, 1+2*delta)
 				overwrite[0] = ch
 				copy(overwrite[1:], t.output[t.linepos:])
 				for i := 0; i < delta; i++ {
@@ -334,7 +334,8 @@ func (t *TTY) esc(ch byte) {
 // - anything
 func (t *TTY) yield() {
 	select {
-	case done := <-t.update: <-done
+	case done := <-t.update:
+		<-done
 	default:
 	}
 }
