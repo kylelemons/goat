@@ -19,6 +19,15 @@ import (
 )
 
 func main() {
+	tio, err := term.NewTermSettings(0)
+	if err != nil {
+		log.Fatalf("terminfo: %s", err)
+	}
+	if err := tio.Raw(); err != nil {
+		log.Fatalf("rawterm: %s", err)
+	}
+	defer tio.Reset()
+
 	ch := make([]byte, 10)
 	tty := term.NewTTY(os.Stdin)
 	line := ""

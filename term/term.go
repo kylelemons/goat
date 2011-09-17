@@ -130,7 +130,7 @@ func (t *TTY) echo(b ...byte) {
 // Side effects: (only if output is nonzero and not an escape sequence)
 // - t.last will contain a copy of output
 func (t *TTY) hpush() {
-	if len(t.output) == 0 || t.output[0] < 0x32 {
+	if len(t.output) == 0 || t.output[0] < 32 {
 		return
 	}
 	t.last = make([]byte, len(t.output))
