@@ -192,7 +192,8 @@ func (t *TTY) hprev() {
 // console.
 //
 // If ch is carriage return or newline (some terminals emit one, some emit the
-// other), the output is written and then a CRLF is written.
+// other), the output is written and then a the character is written, but in
+// both cases a CRLF is echoed.
 //
 // If ch is anything else (basicaly a printing character), it is echoed and
 // appended to output.
@@ -286,6 +287,14 @@ func (t *TTY) esc(ch byte) {
 	}
 }
 
+// yield gives the chance for an update to proceed
+func (t *TTY) yield() {
+	select {
+	case done := <-t.update: <-done
+	default:
+	}
+}
+
 // run is the primary reading goroutine.  It reads chunks from the console, and processes them
 // or (if not in cooked mode) outputs them directly.  Before each read, it gives the setter
 // methods the opportunity to pause it while they poke at the TTY internals.  This is not
@@ -297,13 +306,7 @@ func (t *TTY) run() {
 	t.output = make([]byte, 0, t.bsize)
 
 	for {
-		// Pause for any updates
-		select {
-		case done := <-t.update:
-			<-done
-		default:
-		}
-
+		t.yield()
 		n, err := t.console.Read(t.buffer)
 		if err != nil {
 			if len(t.output) > 0 {
@@ -312,6 +315,7 @@ func (t *TTY) run() {
 			t.error = err
 			return
 		}
+		t.yield()
 
 		// Bypass line editing if we're not in cooked mode
 		if !t.cooked {
@@ -345,4 +349,15 @@ func (t *TTY) Read(b []byte) (n int, err os.Error) {
 	n = copy(b, t.partial)
 	t.partial = t.partial[n:]
 	return
+}
+
+// Write writes to the same io.Writer that is handing the interactive echo.  If
+// interactive echo is disabled (either directly or because an echo write
+// failed) Write will return EOF.
+func (t *TTY) Write(b []byte) (n int, err os.Error) {
+	w := t.intecho
+	if w == nil {
+		return 0, os.EOF
+	}
+	return w.Write(b)
 }

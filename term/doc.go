@@ -24,14 +24,16 @@
 // the complete lines it accumulates.
 //
 //   tty := term.NewTTY(os.Stdin)
+//
 //   line := ""
 //   for {
-//       n, err := tty.Read(ch)
+//       n, err := tty.Read(raw)
 //       if err != nil {
 //           log.Printf("read: %s", err)
 //           return
 //       }
-//       switch str := string(ch[:n]); str {
+//
+//       switch str := string(raw[:n]); str {
 //       case "quit", term.Interrupt, term.EndOfFile:
 //           fmt.Println("Goodbye!")
 //           return
