@@ -3,35 +3,43 @@ package term
 // Terminal Control Codes
 const (
 	NUL = iota
-	SOH
-	STX
-	ETX
-	EOT
-	ENQ
-	ACK
-	BEL
-	BS
-	TAB
-	LF
-	VT
-	FF
-	CR
-	SO
-	SI
-	DLE
-	DC1
-	DC2
-	DC3
-	DC4
-	NAK
-	SYN
-	ETB
-	CAN
-	EM
-	SUB
-	ESC
-	FS
-	GS
-	RS
-	US
+	SOH // Start of Header
+	STX // Start of Text
+	ETX // End of Text
+	EOT // End of Transmission
+	ENQ // Enquire
+	ACK // Acknowledge
+	BEL // Bell
+	BS  // Backspace
+	TAB // Horizontal tab
+	LF  // Line feed
+	VT  // Vertical tab
+	FF  // Form feed
+	CR  // Carriage return
+	SO  // Shift out
+	SI  // Shift in
+	DLE // Data link escape
+	DC1 // Device Control 1
+	DC2 // Device Control 2
+	DC3 // Device Control 3
+	DC4 // Device Control 4
+	NAK // Negative Acknowledge
+	SYN // Synchronize
+	ETB // End Transmission Block
+	CAN // CANCEL
+	EM  // End of Medium
+	SUB // Substitute
+	ESC // Escape
+	FS  // File separator
+	GS  // Group separator
+	RS  // Record separator
+	US  // Unit separator
+)
+
+// Control Codes
+const (
+	Interrupt = "\x03" // ^C
+	EndOfFile = "\x04" // ^D
+	Suspend   = "\x1a" // ^Z
+	Quit      = "\x1c" // ^\
 )
