@@ -8,4 +8,4 @@ DEPS=term
 include $(GOROOT)/src/Make.cmd
 
 demo: all
-	stty raw; ./goat; stty cooked
+	stty raw -echo; ./goat; stty cooked echo

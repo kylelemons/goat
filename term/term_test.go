@@ -121,6 +121,101 @@ var termTests = []struct {
 			"t", "h", "r", "e", "e", "\r\n"},
 		Output: []string{"one", "\n", "onethree", "\n"},
 	},
+	{
+		Desc:   "left",
+		Chunks: []string{
+			"abcde",
+			"\x1b[D", // LEFT
+		},
+		Echo: []string{
+			"a", "b", "c", "d", "e",
+			"\x1b[D",
+		},
+		Output: []string{"abcde"},
+	},
+	{
+		Desc:   "left noop",
+		Chunks: []string{
+			"\x1b[D", // LEFT
+			"abcde",
+		},
+		Echo: []string{
+			"a", "b", "c", "d", "e",
+		},
+		Output: []string{"abcde"},
+	},
+	{
+		Desc:   "left insert",
+		Chunks: []string{
+			"abc",
+			"\x1b[D", // LEFT
+			"d",
+		},
+		Echo: []string{
+			"a", "b", "c",
+			"\x1b[D",
+			"dc\b",
+		},
+		Output: []string{"abdc"},
+	},
+	{
+		Desc:   "left noop insert",
+		Chunks: []string{
+			"a",
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"b",
+		},
+		Echo: []string{
+			"a",
+			"\x1b[D",
+			"ba\b",
+		},
+		Output: []string{"ba"},
+	},
+	{
+		Desc:   "right noop",
+		Chunks: []string{
+			"abc",
+			"\x1b[C", // RIGHT
+		},
+		Echo: []string{
+			"a", "b", "c",
+		},
+		Output: []string{"abc"},
+	},
+	{
+		Desc:   "left right",
+		Chunks: []string{
+			"ab",
+			"\x1b[D", // LEFT
+			"\x1b[C", // RIGHT
+			"c",
+		},
+		Echo: []string{
+			"a", "b",
+			"\x1b[D", // LEFT
+			"\x1b[C", // RIGHT
+			"c",
+		},
+		Output: []string{"abc"},
+	},
+	{
+		Desc:   "left left down",
+		Chunks: []string{
+			"abc",
+			"\x1b[D", // LEFT
+			"\x1b[D", // LEFT
+			"\x1b[B", // DOWN
+		},
+		Echo: []string{
+			"a", "b", "c",
+			"\x1b[D",
+			"\x1b[D",
+			"bc",
+		},
+		Output: []string{"abc"},
+	},
 }
 
 // TestTerm test up to 1000 reads of up to 4096 bytes each per testcase.

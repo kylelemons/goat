@@ -12,6 +12,12 @@
 // internal purposes, typing a control character (e.g. ^D or ^C) starts a new
 // line, including for line history below.
 //
+// You can also use the arrow keys for editing:
+//   LEFT   Move back one character
+//   RIGHT  Move forward one character
+//   DOWN   Move to the end of the line
+//   UP     Restore previous line (see below)
+//
 // Line history
 //
 // Currently the TTY only has a single-line history.  Pressing the return key

@@ -40,7 +40,7 @@ type TTY struct {
 	output    []byte // The pending line/chunk
 	last      []byte // The last line/chunk (used for prevline)
 	preescape []byte // The contents of output before the escape sequence
-
+	linepos   int    // >= 0 if doing in-place line editing
 }
 
 // NewTTY creates a new TTY for interacting with a user via a limited
@@ -217,10 +217,7 @@ func (t *TTY) char(ch byte) {
 		fallthrough
 	case SOH, STX, ETX, EOT, ENQ, ACK, BEL, VT, FF, SO, SI, DLE, DC1,
 		DC2, DC3, DC4, NAK, SYN, ETB, CAN, EM, SUB, FS, GS, RS, US:
-		if len(t.output) > 0 {
-			t.next <- t.output
-			t.output = make([]byte, 0, t.bsize)
-		}
+		t.emit()
 		t.next <- []byte{ch}
 	case BS, DEL:
 		if len(t.output) > 0 {
@@ -228,6 +225,24 @@ func (t *TTY) char(ch byte) {
 			t.output = t.output[:len(t.output)-1]
 		}
 	default:
+		if t.linepos >= 0 {
+			// Insert on screen
+			if t.intecho != nil {
+				delta := len(t.output)-t.linepos
+				overwrite := make([]byte, 1 + 2*delta)
+				overwrite[0] = ch
+				copy(overwrite[1:], t.output[t.linepos:])
+				for i := 0; i < delta; i++ {
+					overwrite[1+delta+i] = '\b'
+				}
+				t.echo(overwrite...)
+			}
+			// Insert into output
+			t.output = append(t.output[:t.linepos],
+				append([]byte{ch}, t.output[t.linepos:]...)...)
+			t.linepos++
+			break
+		}
 		t.echo(ch)
 		t.output = append(t.output, ch)
 	}
@@ -274,8 +289,34 @@ func (t *TTY) esc(ch byte) {
 			t.hprev()
 			return
 		case 'B': // down
+			if t.linepos < 0 {
+				break
+			}
+			t.echo(t.preescape[t.linepos:]...)
+			t.linepos = -1
 		case 'C': // right
+			if len(t.preescape) == 0 {
+				break
+			}
+			if t.linepos < 0 {
+				break
+			}
+			t.echo(t.output...)
+			t.linepos++
+			if t.linepos == len(t.output) {
+				t.linepos = -1
+			}
 		case 'D': // left
+			if len(t.preescape) == 0 {
+				break
+			}
+			if t.linepos < 0 {
+				t.linepos = len(t.preescape)
+			}
+			if t.linepos > 0 {
+				t.echo(t.output...)
+				t.linepos--
+			}
 		case '~': // pgup(5~)/dn(6~)
 		default:
 			t.output = append(t.preescape, t.output...)
@@ -288,10 +329,33 @@ func (t *TTY) esc(ch byte) {
 }
 
 // yield gives the chance for an update to proceed
+//
+// Side effects:
+// - anything
 func (t *TTY) yield() {
 	select {
 	case done := <-t.update: <-done
 	default:
+	}
+}
+
+// emit sends the contents of t.output over the t.next channel, optionally
+// prefixing it with the preescape if any.  Nothing is done if the length of
+// output (including preescape) is zero.
+//
+// Side effects:
+// - t.output refers to a newly allocated zero-length slice (with capacity t.bsize)
+// - t.preescape is nil
+// - the output is written to t.next
+func (t *TTY) emit() {
+	if len(t.preescape) > 0 {
+		t.output = append(t.preescape, t.output...)
+		t.preescape = nil
+	}
+	if len(t.output) > 0 {
+		t.next <- t.output
+		t.output = make([]byte, 0, t.bsize)
+		t.linepos = -1
 	}
 }
 
@@ -304,14 +368,13 @@ func (t *TTY) run() {
 
 	t.buffer = make([]byte, t.bsize)
 	t.output = make([]byte, 0, t.bsize)
+	t.linepos = -1
 
 	for {
 		t.yield()
 		n, err := t.console.Read(t.buffer)
 		if err != nil {
-			if len(t.output) > 0 {
-				t.next <- append(t.preescape, t.output...)
-			}
+			t.emit()
 			t.error = err
 			return
 		}
