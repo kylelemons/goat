@@ -266,6 +266,23 @@ var termTests = []struct {
 		},
 		Output: []string{"abc"},
 	},
+	{
+		Desc: "left up",
+		Chunks: []string{
+			"qwerty\nabc",
+			"\x1b[D", // LEFT
+			"\x1b[A", // UP
+			"!",
+		},
+		Echo: []string{
+			"q", "w", "e", "r", "t", "y", "\r\n",
+			"a", "b", "c",
+			"\x1b[D",
+			"\rqwerty",
+			"!",
+		},
+		Output: []string{"qwerty", "\n", "qwerty!"},
+	},
 }
 
 // TestTerm test up to 1000 reads of up to 4096 bytes each per testcase.

@@ -160,6 +160,7 @@ func (t *TTY) hprev() {
 
 	t.output = make([]byte, len(t.last))
 	copy(t.output, t.last)
+	t.linepos = -1
 
 	width := len(t.preescape)
 	t.preescape = nil

@@ -9,11 +9,11 @@ func TestTermSettings(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewTermSettings: %s", err)
 	}
-	if err := tio.apply(); err != nil {
-		t.Errorf("apply: %s", err)
+	if err := tio.Apply(); err != nil {
+		t.Errorf("Apply: %s", err)
 	}
 	if err := tio.Reset(); err != nil {
 		t.Errorf("Reset: %s", err)
 	}
-	t.Errorf("%v",tio)
+	t.Log(tio)
 }
