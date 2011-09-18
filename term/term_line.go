@@ -47,7 +47,7 @@ func (t *TTY) hprev() {
 	}
 	t.linepos = -1
 
-	if t.intecho != nil {
+	if t.screen != nil {
 		size, delta := home+len(t.output), width-len(t.output)
 		if delta > 0 {
 			size += 2 * delta
@@ -112,7 +112,7 @@ func (t *TTY) linechar(ch byte) {
 		}
 		if t.linepos > 0 {
 			// Delete onscreen
-			if t.intecho != nil {
+			if t.screen != nil {
 				delta := len(t.output) - t.linepos
 				overwrite := make([]byte, 1+1+2*delta+1)
 				overwrite[0] = ch
@@ -133,7 +133,7 @@ func (t *TTY) linechar(ch byte) {
 	default:
 		if t.linepos >= 0 {
 			// Insert on screen
-			if t.intecho != nil {
+			if t.screen != nil {
 				delta := len(t.output) - t.linepos
 				overwrite := make([]byte, 1+2*delta)
 				overwrite[0] = ch

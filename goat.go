@@ -12,6 +12,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"os"
@@ -19,7 +20,11 @@ import (
 	"github.com/kylelemons/goat/term"
 )
 
+var frame = flag.Bool("frame", false, "Do a frame demo instead of line editing")
+
 func main() {
+	flag.Parse()
+
 	// Set the terminal to RAW mode
 	tio, err := term.NewTermSettings(0)
 	if err != nil {
@@ -32,6 +37,14 @@ func main() {
 	// Restore cooked settings on exit
 	defer tio.Reset()
 
+	if *frame {
+		frameDemo(tio)
+	} else {
+		lineDemo()
+	}
+}
+
+func lineDemo() {
 	// Allocate a TTY connected to standard input
 	tty := term.NewTTY(os.Stdin)
 
@@ -69,4 +82,42 @@ func main() {
 			line += str
 		}
 	}
+}
+
+func frameDemo(tio *term.TermSettings) {
+	// Allocate a TTY connected to standard input
+	tty, region := term.NewFrameTTY(os.Stdin)
+	tty.Clear()
+	region.SetBorder(term.SimpleBorder)
+
+	width, height, err := tio.GetSize()
+	if err == nil && width > 0 && height > 0 {
+		region.SetSize(width, height)
+	}
+
+	region.Draw()
+
+	// Allocate the line buffer and accumulator
+	linebuf := make([]byte, 128)
+
+	for {
+		// Read from the TTY
+		n, err := tty.Read(linebuf)
+		if err != nil {
+			log.Printf("read: %s", err)
+			return
+		}
+
+		// Examine the chunk
+		switch str := string(linebuf[:n]); str {
+		case "quit", term.Interrupt, term.EndOfFile:
+			// Quit on "quit", ^C, and ^D
+			tty.Clear()
+			tty.SetCursor(0, 0)
+			io.WriteString(tty, "Goodbye!\r\n")
+			log.Printf("%dx%d\r", width, height)
+			return
+		}
+	}
+
 }

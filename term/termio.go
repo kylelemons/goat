@@ -154,6 +154,13 @@ type termios [0 +
 	8 + //   unsigned long c_ospeed  // output speed
 	0]byte
 
+type winsize [0 +
+	2 + // unsigned short row
+	2 + // unsigned short col
+	2 + // unsigned short xpixel
+	2 + // unsigned short ypixel
+	0]byte
+
 type TermSettings struct {
 	fd       int
 	original termios
@@ -191,6 +198,20 @@ func (tio *TermSettings) String() string {
   ISpeed  = 0x%X
   OSpeed  = 0x%X
 `, tio.fd, tio.i, tio.o, tio.c, tio.l, tio.cc, tio.is, tio.os)
+}
+
+func (tio *TermSettings) GetSize() (width, height int, err os.Error) {
+	size := winsize{}
+	_, _, errno := syscall.RawSyscall(syscall.SYS_IOCTL,
+		uintptr(tio.fd),
+		uintptr(syscall.TIOCGWINSZ),
+		uintptr(unsafe.Pointer(&size)))
+	if errno != 0 {
+		return 0, 0, os.Errno(errno)
+	}
+	height = int(le.Uint16(size[0:2]))
+	width = int(le.Uint16(size[2:4]))
+	return
 }
 
 // Raw sets the terminal to a very minimal raw mode suitable for simulating a

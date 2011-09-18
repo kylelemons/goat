@@ -18,9 +18,9 @@ const (
 type ttyMode int
 // The following constants are the modes in which the TTY can be set
 const (
-	Raw ttyMode = iota // All reads are passed through
-	Line               // Basic line-editing capabilities are provided
-	Frame              // Basic screen-editing capabilities are provided
+	Raw   ttyMode = iota // All reads are passed through
+	Line                 // Basic line-editing capabilities are provided
+	Frame                // Basic screen-editing capabilities are provided
 )
 
 // A TTY is a simple interface for reading input from a user over a raw
@@ -31,7 +31,7 @@ const (
 type TTY struct {
 	// IO
 	console io.Reader
-	intecho io.Writer
+	screen  io.Writer
 
 	// Synchronization and reading
 	next    chan []byte    // Completed chunks (usually lines)
@@ -50,6 +50,10 @@ type TTY struct {
 	last      []byte // The last line/chunk (used for prevline)
 	preescape []byte // The contents of output before the escape sequence
 	linepos   int    // >= 0 if doing in-place line editing
+
+	// State (Frame mode)
+	regions []*Region
+	active  int
 }
 
 // NewTTY creates a new TTY for interacting with a user via a limited
@@ -64,7 +68,7 @@ func NewTTY(console io.Reader) *TTY {
 		update:  make(chan chan bool),
 	}
 
-	t.intecho, _ = console.(io.Writer)
+	t.screen, _ = console.(io.Writer)
 
 	go t.run()
 	return t
@@ -77,19 +81,23 @@ func NewTTY(console io.Reader) *TTY {
 // A TTY created with NewFrameTTY has synchronized reads, so further input is
 // not processed until the chunk has been read.  The default read buffer size
 // for a Frame TTY is much smaller than the others.
-func NewFrameTTY(console io.Reader) *TTY {
+//
+// The default region for a new Frame is an 80x24 region with the initial
+// cursor placed in the upper right-hand corner.  This region is returned,
+// but will not have been been drawn (e.g. its settings can be changed).
+func NewFrameTTY(console io.ReadWriter) (*TTY, *Region) {
 	t := &TTY{
 		console: console,
+		screen:  console,
 		next:    make(chan []byte),
 		mode:    Frame,
 		bsize:   DefaultFrameBufferSize,
 		update:  make(chan chan bool),
 	}
 
-	t.intecho, _ = console.(io.Writer)
-
 	go t.run()
-	return t
+	r := t.NewRegion(80, 24, 0, 0)
+	return t, r
 }
 
 // NewRawTTY creates a new TTY without line editing and with a larger potential
@@ -113,7 +121,7 @@ func NewRawTTY(console io.Reader) *TTY {
 func (t *TTY) SetEcho(echo io.Writer) {
 	lock := make(chan bool, 1)
 	t.update <- lock
-	t.intecho = echo
+	t.screen = echo
 	lock <- true
 }
 
@@ -158,9 +166,9 @@ func (t *TTY) SetMode(mode ttyMode) {
 // Side effects:
 // - If there is a write error, interactive editing is disabled
 func (t *TTY) echo(b ...byte) {
-	if t.intecho != nil {
-		if _, err := t.intecho.Write(b); err != nil {
-			t.intecho = nil
+	if t.screen != nil {
+		if _, err := t.screen.Write(b); err != nil {
+			t.screen = nil
 		}
 	}
 }
@@ -255,7 +263,7 @@ func (t *TTY) Read(b []byte) (n int, err os.Error) {
 // interactive echo is disabled (either directly or because an echo write
 // failed) Write will return EOF.
 func (t *TTY) Write(b []byte) (n int, err os.Error) {
-	w := t.intecho
+	w := t.screen
 	if w == nil {
 		return 0, os.EOF
 	}
