@@ -1,4 +1,7 @@
-package term
+// Run this test with:
+//   go test -c && ./term.test
+
+package termios
 
 import (
 	"testing"
@@ -27,5 +30,5 @@ func TestTermSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSize: %s", err)
 	}
-	t.Log("Size: %d x %d", w, h)
+	t.Logf("Size: %d cols, %d rows", w, h)
 }

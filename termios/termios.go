@@ -1,193 +1,146 @@
-package term
+// +build linux darwin
+
+// Package termios implements low-level terminal settings.
+package termios
 
 import (
-	"encoding/binary"
 	"fmt"
-	"os"
 	"syscall"
 	"unsafe"
 )
 
-type inMode uint64
+/*
+#include <termios.h>
+#include <sys/ioctl.h>
+*/
+import "C"
+
+type (
+	inMode    C.tcflag_t
+	outMode   C.tcflag_t
+	ctlMode   C.tcflag_t
+	locMode   C.tcflag_t
+	charIndex C.cc_t
+)
+
 // Input Flags
 const (
-	IGNBRK  inMode = 0x00000001 // ignore BREAK condition
-	BRKINT  inMode = 0x00000002 // map BREAK to SIGINTR
-	IGNPAR  inMode = 0x00000004 // ignore (discard) parity errors
-	PARMRK  inMode = 0x00000008 // mark parity and framing errors
-	INPCK   inMode = 0x00000010 // enable checking of parity errors
-	ISTRIP  inMode = 0x00000020 // strip 8th bit off chars
-	INLCR   inMode = 0x00000040 // map NL into CR
-	IGNCR   inMode = 0x00000080 // ignore CR
-	ICRNL   inMode = 0x00000100 // map CR to NL (ala CRMOD)
-	IXON    inMode = 0x00000200 // enable output flow control
-	IXOFF   inMode = 0x00000400 // enable input flow control
-	IXANY   inMode = 0x00000800 // any char will restart after stop
-	IMAXBEL inMode = 0x00002000 // ring bell on input queue full
-	IUTF8   inMode = 0x00004000 // maintain state for UTF-8 VERASE
+	IGNBRK  inMode = C.IGNBRK  // ignore BREAK condition
+	BRKINT  inMode = C.BRKINT  // map BREAK to SIGINTR
+	IGNPAR  inMode = C.IGNPAR  // ignore (discard) parity errors
+	PARMRK  inMode = C.PARMRK  // mark parity and framing errors
+	INPCK   inMode = C.INPCK   // enable checking of parity errors
+	ISTRIP  inMode = C.ISTRIP  // strip 8th bit off chars
+	INLCR   inMode = C.INLCR   // map NL into CR
+	IGNCR   inMode = C.IGNCR   // ignore CR
+	ICRNL   inMode = C.ICRNL   // map CR to NL (ala CRMOD)
+	IXON    inMode = C.IXON    // enable output flow control
+	IXOFF   inMode = C.IXOFF   // enable input flow control
+	IXANY   inMode = C.IXANY   // any char will restart after stop
+	IMAXBEL inMode = C.IMAXBEL // ring bell on input queue full
+	IUTF8   inMode = C.IUTF8   // maintain state for UTF-8 VERASE
 )
 
-type outMode uint64
 // Output Flags
 const (
-	OPOST  outMode = 0x00000001 // enable following output processing
-	ONLCR  outMode = 0x00000002 // map NL to CR-NL (ala CRMOD)
-	OXTABS outMode = 0x00000004 // expand tabs to spaces
-	ONOEOT outMode = 0x00000008 // discard EOT's (^D) on output)
-	OCRNL  outMode = 0x00000010 // map CR to NL on output
-	ONOCR  outMode = 0x00000020 // no CR output at column 0
-	ONLRET outMode = 0x00000040 // NL performs CR function
-	OFILL  outMode = 0x00000080 // use fill characters for delay
-	NLDLY  outMode = 0x00000300 // \n delay
-	TABDLY outMode = 0x00000c04 // horizontal tab delay
-	CRDLY  outMode = 0x00003000 // \r delay
-	FFDLY  outMode = 0x00004000 // form feed delay
-	BSDLY  outMode = 0x00008000 // \b delay
-	VTDLY  outMode = 0x00010000 // vertical tab delay
-	OFDEL  outMode = 0x00020000 // fill is DEL, else NUL
+	OPOST  outMode = C.OPOST  // enable following output processing
+	ONLCR  outMode = C.ONLCR  // map NL to CR-NL (ala CRMOD)
+	OCRNL  outMode = C.OCRNL  // map CR to NL on output
+	ONOCR  outMode = C.ONOCR  // no CR output at column 0
+	ONLRET outMode = C.ONLRET // NL performs CR function
+	OFILL  outMode = C.OFILL  // use fill characters for delay
+	NLDLY  outMode = C.NLDLY  // \n delay
+	TABDLY outMode = C.TABDLY // horizontal tab delay
+	CRDLY  outMode = C.CRDLY  // \r delay
+	FFDLY  outMode = C.FFDLY  // form feed delay
+	BSDLY  outMode = C.BSDLY  // \b delay
+	VTDLY  outMode = C.VTDLY  // vertical tab delay
+	OFDEL  outMode = C.OFDEL  // fill is DEL, else NUL
 )
 
-type ctlMode uint64
 // Control Flags
 const (
-	CIGNORE    ctlMode = 0x00000001 // ignore control flags
-	CSIZE      ctlMode = 0x00000300 // character size mask
-	CS6        ctlMode = 0x00000100 // 6 bits
-	CS7        ctlMode = 0x00000200 // 7 bits
-	CS8        ctlMode = 0x00000300 // 8 bits
-	CSTOPB     ctlMode = 0x00000400 // send 2 stop bits
-	CREAD      ctlMode = 0x00000800 // enable receiver
-	PARENB     ctlMode = 0x00001000 // parity enable
-	PARODD     ctlMode = 0x00002000 // odd parity, else even
-	HUPCL      ctlMode = 0x00004000 // hang up on last close
-	CLOCAL     ctlMode = 0x00008000 // ignore modem status lines
-	CCTS_OFLOW ctlMode = 0x00010000 // CTS flow control of output
-	CRTS_IFLOW ctlMode = 0x00020000 // RTS flow control of input
-	CDTR_IFLOW ctlMode = 0x00040000 // DTR flow control of input
-	CDSR_OFLOW ctlMode = 0x00080000 // DSR flow control of output
-	CCAR_OFLOW ctlMode = 0x00100000 // DCD flow control of output
+	CSIZE  ctlMode = C.CSIZE  // character size mask
+	CS6    ctlMode = C.CS6    // 6 bits
+	CS7    ctlMode = C.CS7    // 7 bits
+	CS8    ctlMode = C.CS8    // 8 bits
+	CSTOPB ctlMode = C.CSTOPB // send 2 stop bits
+	CREAD  ctlMode = C.CREAD  // enable receiver
+	PARENB ctlMode = C.PARENB // parity enable
+	PARODD ctlMode = C.PARODD // odd parity, else even
+	HUPCL  ctlMode = C.HUPCL  // hang up on last close
+	CLOCAL ctlMode = C.CLOCAL // ignore modem status lines
 )
 
-type locMode uint64
 // Local flags
 const (
-	ECHOKE     locMode = 0x00000001 // visual erase for line kill
-	ECHOE      locMode = 0x00000002 // visually erase chars
-	ECHOK      locMode = 0x00000004 // echo NL after line kill
-	ECHO       locMode = 0x00000008 // enable echoing
-	ECHONL     locMode = 0x00000010 // echo NL even if ECHO is off
-	ECHOPRT    locMode = 0x00000020 // visual erase mode for hardcopy
-	ECHOCTL    locMode = 0x00000040 // echo control chars as ^(Char)
-	ISIG       locMode = 0x00000080 // enable signals INTR, QUIT, [D]SUSP
-	ICANON     locMode = 0x00000100 // canonicalize input lines
-	ALTWERASE  locMode = 0x00000200 // use alternate WERASE algorithm
-	IEXTEN     locMode = 0x00000400 // enable DISCARD and LNEXT
-	EXTPROC    locMode = 0x00000800 // external processing
-	TOSTOP     locMode = 0x00400000 // stop background jobs from output
-	FLUSHO     locMode = 0x00800000 // output being flushed (state)
-	NOKERNINFO locMode = 0x02000000 // no kernel output from VSTATUS
-	PENDIN     locMode = 0x20000000 // XXX retype pending input (state)
-	NOFLSH     locMode = 0x80000000 // don't flush after interrupt
+	ECHOKE  locMode = C.ECHOKE  // visual erase for line kill
+	ECHOE   locMode = C.ECHOE   // visually erase chars
+	ECHOK   locMode = C.ECHOK   // echo NL after line kill
+	ECHO    locMode = C.ECHO    // enable echoing
+	ECHONL  locMode = C.ECHONL  // echo NL even if ECHO is off
+	ECHOPRT locMode = C.ECHOPRT // visual erase mode for hardcopy
+	ECHOCTL locMode = C.ECHOCTL // echo control chars as ^(Char)
+	ISIG    locMode = C.ISIG    // enable signals INTR, QUIT, [D]SUSP
+	ICANON  locMode = C.ICANON  // canonicalize input lines
+	IEXTEN  locMode = C.IEXTEN  // enable DISCARD and LNEXT
+	EXTPROC locMode = C.EXTPROC // external processing
+	TOSTOP  locMode = C.TOSTOP  // stop background jobs from output
+	FLUSHO  locMode = C.FLUSHO  // output being flushed (state)
+	PENDIN  locMode = C.PENDIN  // XXX retype pending input (state)
+	NOFLSH  locMode = C.NOFLSH  // don't flush after interrupt
 )
 
-// Control Characters
+// Control Character Indices
 const (
-	vEOF     = iota // ICANON
-	vEOL            // ICANON
-	vEOL2           // ICANON together with IEXTEN
-	vERASE          // ICANON
-	vWERASE         // ICANON together with IEXTEN
-	vKILL           // ICANON
-	vREPRINT        // ICANON together with IEXTEN
-	spareCC1        // Spare 1
-	vINTR           // ISIG
-	vQUIT           // ISIG
-	vSUSP           // ISIG
-	vDSUSP          // ISIG together with IEXTEN
-	vSTART          // IXON, IXOFF
-	vSTOP           // IXON, IXOFF
-	vLNEXT          // IEXTEN
-	vDISCARD        // IEXTEN
-	vMIN            // !ICANON
-	vTIME           // !ICANON
-	vSTATUS         // ICANON together with IEXTEN
-	spareCC2        // Spare 2
-	nCC             // Number of control chars
+	VEOF     charIndex = C.VEOF     // ICANON
+	VEOL     charIndex = C.VEOL     // ICANON
+	VEOL2    charIndex = C.VEOL2    // ICANON together with IEXTEN
+	VERASE   charIndex = C.VERASE   // ICANON
+	VWERASE  charIndex = C.VWERASE  // ICANON together with IEXTEN
+	VKILL    charIndex = C.VKILL    // ICANON
+	VREPRINT charIndex = C.VREPRINT // ICANON together with IEXTEN
+	VINTR    charIndex = C.VINTR    // ISIG
+	VQUIT    charIndex = C.VQUIT    // ISIG
+	VSUSP    charIndex = C.VSUSP    // ISIG
+	VSTART   charIndex = C.VSTART   // IXON, IXOFF
+	VSTOP    charIndex = C.VSTOP    // IXON, IXOFF
+	VLNEXT   charIndex = C.VLNEXT   // IEXTEN
+	VDISCARD charIndex = C.VDISCARD // IEXTEN
+	VMIN     charIndex = C.VMIN     // !ICANON
+	VTIME    charIndex = C.VTIME    // !ICANON
+	NCC      charIndex = C.NCCS     // Number of control chars
 )
 
-// Standard speeds
-const (
-	b0      = 0
-	b50     = 50
-	b75     = 75
-	b110    = 110
-	b134    = 134
-	b150    = 150
-	b200    = 200
-	b300    = 300
-	b600    = 600
-	b1200   = 1200
-	b1800   = 1800
-	b2400   = 2400
-	b4800   = 4800
-	b7200   = 7200
-	b9600   = 9600
-	b19200  = 19200
-	bEXTA   = 19200
-	b38400  = 38400
-	bEXTB   = 38400
-	b14400  = 14400
-	b28800  = 28800
-	b57600  = 57600
-	b76800  = 76800
-	b115200 = 115200
-	b230400 = 230400
-)
-
-type termios [0 +
-	8 + //   unsigned long c_iflag   // input flags
-	8 + //   unsigned long c_oflag   // output flags
-	8 + //   unsigned long c_cflag   // control flags
-	8 + //   unsigned long c_lflag   // local flags
-	nCC + // unsigned char c_cc[nCC] // control chars
-	8 + //   unsigned long c_ispeed  // input speed
-	8 + //   unsigned long c_ospeed  // output speed
-	0]byte
-
-type winsize [0 +
-	2 + // unsigned short row
-	2 + // unsigned short col
-	2 + // unsigned short xpixel
-	2 + // unsigned short ypixel
-	0]byte
-
+// TermSettings contain both the original settings from when it was created
+// and the current settings being manipulated.  At any time, Reset will
+// restore the terminal to its original state.
 type TermSettings struct {
 	fd       int
-	original termios
-	current  termios
-	i, o     []byte
-	c, l     []byte
-	cc       []byte
-	is, os   []byte
+	original C.struct_termios
+	current  C.struct_termios
 }
 
-func NewTermSettings(fd int) (*TermSettings, os.Error) {
+// NewTermSettings examines the state of the current terminal and
+// stores it in a fresh TermSettings.
+func NewTermSettings(fd int) (*TermSettings, error) {
 	tio := &TermSettings{fd: fd}
-	_, _, errno := syscall.RawSyscall(syscall.SYS_IOCTL,
-		uintptr(tio.fd),
-		uintptr(syscall.TIOCGETA),
-		uintptr(unsafe.Pointer(&tio.original)))
-	if errno != 0 {
-		return nil, os.Errno(errno)
+
+	if ret, errno := C.tcgetattr(C.int(fd), &tio.current); ret != 0 {
+		return nil, errno
 	}
-	copy(tio.current[:], tio.original[:])
-	tio.i, tio.o = tio.current[000:010], tio.current[010:020]
-	tio.c, tio.l = tio.current[020:030], tio.current[030:040]
-	tio.cc = tio.current[040 : 040+nCC]
-	tio.is, tio.os = tio.current[040+nCC:050+nCC], tio.current[050+nCC:060+nCC]
+	tio.original = tio.current
 	return tio, nil
 }
 
+// Char returns the rune associated with the given control
+// character.  These will generally be ASCII control characters.
+func (tio *TermSettings) Char(idx charIndex) rune {
+	return rune(tio.current.c_cc[int(idx)])
+}
+
+// String returns a debugging string which contains low-level
+// information about the terminal.
 func (tio *TermSettings) String() string {
 	return fmt.Sprintf(`Terminal[%d]:
   Input   = 0x%X
@@ -195,22 +148,29 @@ func (tio *TermSettings) String() string {
   Control = 0x%X
   Local   = 0x%X
   Chars   = %v
-  ISpeed  = 0x%X
-  OSpeed  = 0x%X
-`, tio.fd, tio.i, tio.o, tio.c, tio.l, tio.cc, tio.is, tio.os)
+`,
+		tio.fd,
+		tio.current.c_iflag,
+		tio.current.c_oflag,
+		tio.current.c_cflag,
+		tio.current.c_lflag,
+		tio.current.c_cc)
 }
 
-func (tio *TermSettings) GetSize() (width, height int, err os.Error) {
-	size := winsize{}
+// GetSize attempts to determine the size of the terminal with which
+// this TermSettings is associated and return the number of rows (the height)
+// and the number of columns (width).
+func (tio *TermSettings) GetSize() (width, height int, err error) {
+	var ws C.struct_winsize
 	_, _, errno := syscall.RawSyscall(syscall.SYS_IOCTL,
 		uintptr(tio.fd),
 		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(&size)))
+		uintptr(unsafe.Pointer(&ws)))
 	if errno != 0 {
-		return 0, 0, os.Errno(errno)
+		return 0, 0, syscall.Errno(errno)
 	}
-	height = int(le.Uint16(size[0:2]))
-	width = int(le.Uint16(size[2:4]))
+	height = int(ws.ws_row)
+	width = int(ws.ws_col)
 	return
 }
 
@@ -222,37 +182,33 @@ func (tio *TermSettings) GetSize() (width, height int, err os.Error) {
 // I recommend this being done early on in main() and having a deferred call to
 // tio.Reset so that the changes will be reverted when everything exits
 // cleanly.
-func (tio *TermSettings) Raw() os.Error {
-	tio.SetInput(IGNBRK | IXANY)
-	tio.SetOutput(0)
-	tio.SetLocal(0)
+func (tio *TermSettings) Raw() error {
+	//tio.SetInput(IGNBRK | IXANY)
+	//tio.SetOutput(0)
+	//tio.SetLocal(0)
+	C.cfmakeraw(&tio.current)
 	return tio.Apply()
 }
 
 // Reset sets the terminal settings to match those that were in effect when the
 // call to NewTermSettings was made.
-func (tio *TermSettings) Reset() os.Error {
-	copy(tio.current[:], tio.original[:])
+func (tio *TermSettings) Reset() error {
+	tio.current = tio.original
 	return tio.Apply()
 }
 
-var le = binary.LittleEndian
-
-func (tio *TermSettings) SetInput(mode inMode)    { le.PutUint64(tio.i, uint64(mode)) }
-func (tio *TermSettings) SetOutput(mode outMode)  { le.PutUint64(tio.o, uint64(mode)) }
-func (tio *TermSettings) SetControl(mode ctlMode) { le.PutUint64(tio.c, uint64(mode)) }
-func (tio *TermSettings) SetLocal(mode locMode)   { le.PutUint64(tio.l, uint64(mode)) }
+func (tio *TermSettings) SetInput(mode inMode)    { tio.current.c_iflag = C.tcflag_t(mode) }
+func (tio *TermSettings) SetOutput(mode outMode)  { tio.current.c_oflag = C.tcflag_t(mode) }
+func (tio *TermSettings) SetControl(mode ctlMode) { tio.current.c_cflag = C.tcflag_t(mode) }
+func (tio *TermSettings) SetLocal(mode locMode)   { tio.current.c_lflag = C.tcflag_t(mode) }
 
 // Apply applies the settings currently stored in tio.  This is mostly useful
 // for maintaining multiple TerminalSettings for different modes, and you can
 // simply Apply whichever you need.
-func (tio *TermSettings) Apply() os.Error {
-	_, _, errno := syscall.RawSyscall(syscall.SYS_IOCTL,
-		uintptr(tio.fd),
-		uintptr(syscall.TIOCSETA),
-		uintptr(unsafe.Pointer(&tio.current)))
-	if errno != 0 {
-		return os.Errno(errno)
+func (tio *TermSettings) Apply() error {
+	const when = C.TCSANOW
+	if ret, errno := C.tcsetattr(C.int(tio.fd), when, &tio.current); ret != 0 {
+		return errno
 	}
 	return nil
 }
