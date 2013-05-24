@@ -2,7 +2,6 @@ package term
 
 import (
 	"io"
-	"os"
 	"testing"
 )
 
@@ -11,11 +10,11 @@ type RW struct {
 	*io.PipeWriter
 }
 
-func (rw *RW) Close() os.Error {
+func (rw *RW) Close() error {
 	return rw.PipeWriter.Close()
 }
 
-func (rw *RW) CloseWithError(err os.Error) os.Error {
+func (rw *RW) CloseWithError(err error) error {
 	return rw.PipeWriter.CloseWithError(err)
 }
 
@@ -38,7 +37,7 @@ func VerifyReads(t *testing.T, desc, what string, r io.Reader, chunks []string, 
 	var idx int
 	for idx = 0; idx < 1000; idx++ {
 		n, err := r.Read(raw)
-		if err == os.EOF {
+		if err == io.EOF {
 			break
 		} else if err != nil {
 			t.Errorf("%s: %s[%d]: %s", desc, what, idx, err)

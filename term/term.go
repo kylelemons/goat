@@ -2,7 +2,6 @@ package term
 
 import (
 	"io"
-	"os"
 	"sync"
 )
 
@@ -16,6 +15,7 @@ const (
 )
 
 type ttyMode int
+
 // The following constants are the modes in which the TTY can be set
 const (
 	Raw   ttyMode = iota // All reads are passed through
@@ -37,7 +37,7 @@ type TTY struct {
 	next    chan []byte    // Completed chunks (usually lines)
 	partial []byte         // Store partial reads
 	lock    sync.RWMutex   // Synchronize multiple readers (locks partial)
-	error   os.Error       // The error when the reader closed
+	error   error          // The error when the reader closed
 	update  chan chan bool // Take ownership of the IO and Settings data
 
 	// Settings
@@ -243,7 +243,7 @@ func (t *TTY) run() {
 }
 
 // Read reads the next line, chunk, control sequence, etc from the console.
-func (t *TTY) Read(b []byte) (n int, err os.Error) {
+func (t *TTY) Read(b []byte) (n int, err error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -262,10 +262,10 @@ func (t *TTY) Read(b []byte) (n int, err os.Error) {
 // Write writes to the same io.Writer that is handing the interactive echo.  If
 // interactive echo is disabled (either directly or because an echo write
 // failed) Write will return EOF.
-func (t *TTY) Write(b []byte) (n int, err os.Error) {
+func (t *TTY) Write(b []byte) (n int, err error) {
 	w := t.screen
 	if w == nil {
-		return 0, os.EOF
+		return 0, io.EOF
 	}
 	return w.Write(b)
 }
