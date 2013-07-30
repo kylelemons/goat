@@ -1,3 +1,17 @@
+// Copyright 2013 Google, Inc.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // goat
 //
 // It is a basic example of terminal emulation with the "goat/term" package.
@@ -18,6 +32,7 @@ import (
 	"os"
 
 	"github.com/kylelemons/goat/term"
+	"github.com/kylelemons/goat/termios"
 )
 
 var frame = flag.Bool("frame", false, "Do a frame demo instead of line editing")
@@ -25,16 +40,13 @@ var frame = flag.Bool("frame", false, "Do a frame demo instead of line editing")
 func main() {
 	flag.Parse()
 
-	// Set the terminal to RAW mode
-	tio, err := term.NewTermSettings(0)
+	tio, err := termios.NewTermSettings(0)
 	if err != nil {
-		log.Fatalf("terminfo: %s", err)
+		log.Fatalf("terminal: %s", err)
 	}
 	if err := tio.Raw(); err != nil {
 		log.Fatalf("rawterm: %s", err)
 	}
-
-	// Restore cooked settings on exit
 	defer tio.Reset()
 
 	if *frame {
@@ -45,7 +57,6 @@ func main() {
 }
 
 func lineDemo() {
-	// Allocate a TTY connected to standard input
 	tty := term.NewTTY(os.Stdin)
 
 	// Prompt after each newline
@@ -84,7 +95,7 @@ func lineDemo() {
 	}
 }
 
-func frameDemo(tio *term.TermSettings) {
+func frameDemo(tio *termios.TermSettings) {
 	// Allocate a TTY connected to standard input
 	tty, region := term.NewFrameTTY(os.Stdin)
 	tty.Clear()
